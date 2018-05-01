@@ -438,6 +438,10 @@
                                 <featureArtifactDef>
                                     org.wso2.carbon.utils:org.wso2.carbon.database.utils.feature:${carbon.database.utils.version}
                                 </featureArtifactDef>
+
+                                <featureArtifactDef>
+                                    org.wso2.carbon.identity.api.appmgt:org.wso2.carbon.identity.integration.b7a.server.feature:${carbon.b7a.integration.version}
+                                </featureArtifactDef>
                             </featureArtifacts>
                         </configuration>
                     </execution>
@@ -896,7 +900,10 @@
                                     <id>org.wso2.carbon.database.utils.feature.group</id>
                                     <version>${carbon.database.utils.version}</version>
                                 </feature>
-
+                                <feature>
+                                    <id>org.wso2.carbon.identity.integration.b7a.server.feature.group</id>
+                                    <version>${carbon.b7a.integration.version}</version>
+                                </feature>
                             </features>
                         </configuration>
                     </execution>
@@ -1362,6 +1369,10 @@
                                     <id>org.wso2.carbon.database.utils.feature.group</id>
                                     <version>${carbon.database.utils.version}</version>
                                 </feature>
+                                <feature>
+                                    <id>org.wso2.carbon.identity.integration.b7a.server.feature.group</id>
+                                    <version>${carbon.b7a.integration.version}</version>
+                                </feature>
 
                             </features>
                         </configuration>
@@ -1790,6 +1801,10 @@
                                 <feature>
                                     <id>org.wso2.carbon.database.utils.feature.group</id>
                                     <version>${carbon.database.utils.version}</version>
+                                </feature>
+                                <feature>
+                                    <id>org.wso2.carbon.identity.integration.b7a.server.feature.group</id>
+                                    <version>${carbon.b7a.integration.version}</version>
                                 </feature>
 
                             </features>
