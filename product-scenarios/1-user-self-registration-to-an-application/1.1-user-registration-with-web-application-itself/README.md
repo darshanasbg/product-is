@@ -7,3 +7,10 @@ You can provision user into identity server in the following ways.
 
 - [1.1.1 Provision user in identity server using SCIM2 API](1.1.1-provision-user-using-scim2/README.md)
 - 1.1.2 Provision user in identity server using SCIM1.1 API
+
+
+
+
+https://github.com/darshanasbg/product-is/tree/product-scenarios/product-scenarios/1-user-self-registration-to-an-application/1.1-user-registration-with-web-application-itself/1.1.1-provision-user-using-SCIM2
+https://github.com/darshanasbg/product-is/blob/product-scenarios/product-scenarios/1-user-self-registration-to-an-application/1.1-user-registration-with-web-application-itself/1.1.1-provision-user-using-scim2/README.md
+https://github.com/darshanasbg/product-is/blob/product-scenarios/product-scenarios/1-user-self-registration-to-an-application/1.1-user-registration-with-web-application-itself/1.1.1-provision-user-using-SCIM2/README.md
