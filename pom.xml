@@ -28,12 +28,11 @@
     <artifactId>identity-server-parent</artifactId>
     <packaging>pom</packaging>
     <description>WSO2 Identity Server</description>
-    <version>5.7.0-alpha3-SNAPSHOT</version>
+    <version>5.8.1-m3-SNAPSHOT</version>
     <name>WSO2 Identity Server</name>
     <url>http://wso2.org/projects/identity</url>
 
     <modules>
-        <module>modules/migration/migration-service</module>
         <module>modules/features</module>
         <module>modules/p2-profile-gen</module>
         <module>modules/connectors</module>
@@ -1964,7 +1963,7 @@
         <operadriver.version>0.8.1</operadriver.version>
         <selenium.version>2.40.0</selenium.version>
         <testng.version>6.1.1</testng.version>
-        <carbon.deployment.version>4.8.3</carbon.deployment.version>
+        <carbon.deployment.version>4.8.5</carbon.deployment.version>
         <carbon.registry.version>4.6.46</carbon.registry.version>
         <carbon.multitenancy.version>4.6.24</carbon.multitenancy.version>
         <jaggery.extensions.version>1.5.5</jaggery.extensions.version>
