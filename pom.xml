@@ -28,7 +28,7 @@
     <artifactId>identity-server-parent</artifactId>
     <packaging>pom</packaging>
     <description>WSO2 Identity Server</description>
-    <version>5.8.1-m3-SNAPSHOT</version>
+    <version>5.7.0-alpha3-SNAPSHOT</version>
     <name>WSO2 Identity Server</name>
     <url>http://wso2.org/projects/identity</url>
 
@@ -1740,6 +1740,16 @@
                 <artifactId>wso2-extensions</artifactId>
                 <version>${wso2.shindig.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.api.idp.mgt</groupId>
+                <artifactId>org.wso2.carbon.identity.api.idpmgt.server.feature</artifactId>
+                <version>${identity.api.idpmgt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.api.idp.mgt</groupId>
+                <artifactId>org.wso2.carbon.identity.api.idpmgt</artifactId>
+                <version>${identity.api.idpmgt.version}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>
@@ -2015,6 +2025,7 @@
         <carbon.healthcheck.version>1.0.3</carbon.healthcheck.version>
         <carbon.logging.admin.stub.version>4.6.60</carbon.logging.admin.stub.version>
         <wso2.shindig.version>2.5.2-wso2v11</wso2.shindig.version>
+        <identity.api.idpmgt.version>0.8</identity.api.idpmgt.version>
     </properties>
 
     <repositories>
