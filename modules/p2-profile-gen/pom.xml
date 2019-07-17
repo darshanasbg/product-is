@@ -460,6 +460,10 @@
                                 <featureArtifactDef>
                                     org.wso2.identity.apps:org.wso2.identity.apps.user.portal.server.feature:${identity.apps.version}
                                 </featureArtifactDef>
+                                <!-- Login portal feature -->
+                                <featureArtifactDef>
+                                    org.wso2.identity.apps:org.wso2.identity.apps.login.portal.server.feature:${identity.apps.version}
+                                </featureArtifactDef>
 
                                 <!-- RESR APIs -->
                                 <featureArtifactDef>
@@ -773,6 +777,13 @@
                                 <feature>
                                     <id>
                                         org.wso2.identity.apps.user.portal.server.feature.group
+                                    </id>
+                                    <version>${identity.apps.version}</version>
+                                </feature>
+
+                                <feature>
+                                    <id>
+                                        org.wso2.identity.apps.login.portal.server.feature.group
                                     </id>
                                     <version>${identity.apps.version}</version>
                                 </feature>
@@ -1313,6 +1324,13 @@
 
                                 <feature>
                                     <id>
+                                        org.wso2.identity.apps.login.portal.server.feature.group
+                                    </id>
+                                    <version>${identity.apps.version}</version>
+                                </feature>
+
+                                <feature>
+                                    <id>
                                         org.wso2.carbon.identity.application.authz.xacml.server.feature.group
                                     </id>
                                     <version>${identity.app.authz.xacml.version}</version>
@@ -1764,6 +1782,13 @@
                                 <feature>
                                     <id>
                                         org.wso2.identity.apps.user.portal.server.feature.group
+                                    </id>
+                                    <version>${identity.apps.version}</version>
+                                </feature>
+
+                                <feature>
+                                    <id>
+                                        org.wso2.identity.apps.login.portal.server.feature.group
                                     </id>
                                     <version>${identity.apps.version}</version>
                                 </feature>
