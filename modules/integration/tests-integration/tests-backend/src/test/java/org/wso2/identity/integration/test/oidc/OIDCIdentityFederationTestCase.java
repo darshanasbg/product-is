@@ -2,13 +2,18 @@ package org.wso2.identity.integration.test.oidc;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.opensaml.xml.util.Base64;
@@ -36,6 +41,7 @@ import org.wso2.identity.integration.test.application.mgt.AbstractIdentityFedera
 import org.wso2.identity.integration.test.oidc.bean.OIDCApplication;
 import org.wso2.identity.integration.test.util.Utils;
 import org.wso2.identity.integration.test.utils.CommonConstants;
+import org.wso2.identity.integration.test.utils.DataExtractUtil;
 import org.wso2.identity.integration.test.utils.IdentityConstants;
 import org.wso2.identity.integration.test.utils.OAuth2Constant;
 
@@ -47,6 +53,7 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.*;
 
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class OIDCIdentityFederationTestCase extends AbstractIdentityFederationTestCase {
 
@@ -89,6 +96,9 @@ public class OIDCIdentityFederationTestCase extends AbstractIdentityFederationTe
 
     protected OauthAdminClient adminClient;
     //protected ApplicationManagementServiceClient appMgtclient;
+
+    CookieStore cookieStore = new BasicCookieStore();
+
 
     @BeforeClass(alwaysRun = true)
     public void initTest() throws Exception {
@@ -275,36 +285,226 @@ public class OIDCIdentityFederationTestCase extends AbstractIdentityFederationTe
         Assert.assertTrue(success, "Failed to update service provider with inbound OIDC configs in secondary IS");
     }
 
+    /**
+     * Send post request with parameters
+     * @param client
+     * @param urlParameters
+     * @param url
+     * @return
+     * @throws ClientProtocolException
+     * @throws java.io.IOException
+     */
+    public HttpResponse sendPostRequestWithParameters(HttpClient client, List<NameValuePair> urlParameters, String url) throws ClientProtocolException,
+            IOException {
+        HttpPost request = new HttpPost(url);
+        request.setHeader("User-Agent", OAuth2Constant.USER_AGENT);
+        request.setEntity(new UrlEncodedFormEntity(urlParameters));
+
+        HttpResponse response = client.execute(request);
+        return response;
+    }
+
+    /**
+     * Send Get request
+     *
+     * @param client
+     *            - http Client
+     * @param locationURL
+     *            - Get url location
+     * @return http response
+     * @throws ClientProtocolException
+     * @throws java.io.IOException
+     */
+    public HttpResponse sendGetRequest(HttpClient client, String locationURL)
+            throws
+            ClientProtocolException,
+            IOException {
+        HttpGet getRequest = new HttpGet(locationURL);
+        getRequest.setHeader("User-Agent", OAuth2Constant.USER_AGENT);
+        HttpResponse response = client.execute(getRequest);
+
+        return response;
+    }
+
+    /**
+     * Send approval post request with consent
+     *
+     * @param client http client
+     * @param sessionDataKeyConsent session consent data
+     * @param consentClaims claims requiring user consent
+     * @return http response
+     * @throws java.io.IOException
+     */
+    public HttpResponse sendApprovalPostWithConsent(HttpClient client, String sessionDataKeyConsent,
+                                                    List<NameValuePair> consentClaims) throws IOException {
+
+        List<NameValuePair> urlParameters = new ArrayList<>();
+        urlParameters.add(new BasicNameValuePair("sessionDataKeyConsent", sessionDataKeyConsent));
+        urlParameters.add(new BasicNameValuePair("scope-approval", "approve"));
+        urlParameters.add(new BasicNameValuePair("user_claims_consent", "true"));
+        urlParameters.add(new BasicNameValuePair("consent_select_all", "on"));
+        urlParameters.add(new BasicNameValuePair("consent_0", "on"));
+        urlParameters.add(new BasicNameValuePair("consent", "approve"));
+
+        if (consentClaims != null) {
+            urlParameters.addAll(consentClaims);
+        }
+
+        HttpResponse response = sendPostRequestWithParameters(client, urlParameters, "https://localhost:9854/oauth2" +
+                "/authorize");
+        return response;
+    }
+
+    /**
+     * Send Post request
+     *
+     * @param client
+     *            - http Client
+     * @param locationURL
+     *            - Post url location
+     * @return http response
+     * @throws ClientProtocolException
+     * @throws java.io.IOException
+     */
+    public HttpResponse sendPostRequest(HttpClient client, String locationURL)
+            throws ClientProtocolException,
+            IOException {
+        HttpPost postRequest = new HttpPost(locationURL);
+        postRequest.setHeader("User-Agent", OAuth2Constant.USER_AGENT);
+        HttpResponse response = client.execute(postRequest);
+
+        return response;
+    }
+
+    public HttpResponse sendLoginPost(HttpClient client, String sessionDataKey) throws IOException {
+
+        List<NameValuePair> urlParameters = new ArrayList<>();
+        urlParameters.add(new BasicNameValuePair("username", usrName));
+        urlParameters.add(new BasicNameValuePair("password", usrPwd));
+        urlParameters.add(new BasicNameValuePair("sessionDataKey", sessionDataKey));
+
+        HttpResponse response = sendPostRequestWithParameters(client, urlParameters,"https://localhost:9854" +
+                "/commonauth");
+
+        return response;
+    }
+
+
+    private String testAuthentication(HttpClient client, String sessionDataKey) throws Exception {
+
+        HttpResponse response = sendLoginPost(client, sessionDataKey);
+        Assert.assertNotNull(response, "Login request failed. response is null.");
+
+        Header locationHeader = response.getFirstHeader(OAuth2Constant.HTTP_RESPONSE_HEADER_LOCATION);
+        Assert.assertNotNull(locationHeader, "Login response header is null.");
+        EntityUtils.consume(response.getEntity());
+
+        response = sendGetRequest(client, locationHeader.getValue());
+        Map<String, Integer> keyPositionMap = new HashMap<>(1);
+        keyPositionMap.put("name=\"sessionDataKeyConsent\"", 1);
+        List<DataExtractUtil.KeyValue> keyValues = DataExtractUtil.extractSessionConsentDataFromResponse(response,
+                keyPositionMap);
+        Assert.assertNotNull(keyValues, "SessionDataKeyConsent key value is null.");
+
+        String sessionDataKeyConsent = keyValues.get(0).getValue();
+        Assert.assertNotNull(sessionDataKeyConsent, "Invalid sessionDataKeyConsent.");
+        EntityUtils.consume(response.getEntity());
+
+        return sessionDataKeyConsent;
+    }
+
+
+
+    private String testConsentApproval(HttpClient client, String sessionDataKeyConsent) throws Exception {
+
+        List<NameValuePair> consentParameters = new ArrayList<>();
+
+        //POST https://localhost:9854/oauth2/authorize
+        HttpResponse response = sendApprovalPostWithConsent(client, sessionDataKeyConsent, consentParameters);
+        Assert.assertNotNull(response, "Approval request failed.");
+
+        Header locationHeader = response.getFirstHeader(OAuth2Constant.HTTP_RESPONSE_HEADER_LOCATION);
+        Assert.assertNotNull(locationHeader, "Approval request failed for.");
+        EntityUtils.consume(response.getEntity());
+
+        return locationHeader.getValue();
+    }
+
+
+
+    private String handleMissingClaims(HttpResponse response, String locationHeader, HttpClient client, String
+            pastrCookie) throws Exception {
+        EntityUtils.consume(response.getEntity());
+
+        response = Utils.sendPOSTConsentMessage(response, String.format(COMMON_AUTH_URL, DEFAULT_PORT + PORT_OFFSET_0),
+                USER_AGENT, locationHeader, client, pastrCookie);
+        EntityUtils.consume(response.getEntity());
+        return getHeaderValue(response, "Location");
+    }
+
+
+
+    private String testAuthzCode(HttpClient client, String authzResponseURL) throws Exception {
+
+        //GET https://localhost:9853/commonauth?code=a184f325-edd3-3e2c-9a2a-c5cc1d1f8d88&state=a5f2e2ba-fc40-4e57-bb71-02169f504a4b%2COIDC&session_state=340443ff
+        HttpClient httpClientWithoutAutoRedirections = HttpClientBuilder.create().disableRedirectHandling()
+                .setDefaultCookieStore(cookieStore).build();
+        HttpResponse response = sendGetRequest(httpClientWithoutAutoRedirections, authzResponseURL);
+        Assert.assertNotNull(response, "Authorization code response to primary IS is invalid.");
+
+        String locationHeader = getHeaderValue(response, "Location");
+        Assert.assertNotNull(locationHeader, "locationHeader not found in response.");
+        String pastrCookie = Utils.getPastreCookie(response);
+        Assert.assertNotNull(pastrCookie, "pastr cookie not found in response.");
+
+        if (Utils.requestMissingClaims(response)) {
+            //POST https://localhost:9853/commonauth
+            locationHeader = handleMissingClaims(response, locationHeader, client, pastrCookie);
+            Assert.assertNotNull(locationHeader, "locationHeader not found in response.");
+        }
+
+        return locationHeader;
+    }
+
     @Test(priority = 4, groups = "wso2.is", description = "Check create service provider in secondary IS")
     public void testFederation() throws Exception {
-        HttpClient client = new DefaultHttpClient();
+        HttpClient client = HttpClientBuilder.create().setDefaultCookieStore(cookieStore).build();
 
         String sessionId = sendSAMLRequestToPrimaryIS(client);
-        Assert.assertNotNull(sessionId, "Unable to acquire 'sessionDataKey' value");
+        Assert.assertNotNull(sessionId, "Unable to acquire 'sessionDataKey' value in secondary IS");
 
-        String redirectURL = authenticateWithSecondaryIS(client, sessionId);
-        Assert.assertNotNull(redirectURL, "Unable to acquire redirect url after login to secondary IS");
+        String sessionDataKeyConsent = testAuthentication(client, sessionId);
+        String authzResponseURL = testConsentApproval(client, sessionDataKeyConsent);
 
-        Map<String, String> responseParameters = getOIDCResponseFromSecondaryIS(client, redirectURL);
-        Assert.assertNotNull(responseParameters);
-//        Assert.assertNotNull(responseParameters.get("SAMLResponse"), "Unable to acquire 'SAMLResponse' value");
-//        Assert.assertNotNull(responseParameters.get("RelayState"), "Unable to acquire 'RelayState' value");
+        String authorizeURL = testAuthzCode(client, authzResponseURL);
+        Assert.assertNotNull(authorizeURL, "Unable to acquire authorizeURL in primary IS");
 
-//        redirectURL = sendSAMLResponseToPrimaryIS(client, responseParameters);
-//        Assert.assertNotNull(redirectURL, "Unable to acquire redirect url after sending SAML response to primary IS");
-//
-//        String samlResponse = getSAMLResponseFromPrimaryIS(client, redirectURL);
-//        Assert.assertNotNull(samlResponse, "Unable to acquire SAML response from primary IS");
-//
-//        String decodedSAMLResponse = new String(Base64.decode(samlResponse));
-//        Assert.assertTrue(decodedSAMLResponse.contains("AuthnContextClassRef"), "AuthnContextClassRef is not received" +
-//                ".");
+        HttpResponse response = sendGetRequest(client, authorizeURL);
+        String samlResponse = extractValueFromResponse(response, "SAMLResponse", 5);
+
+        Assert.assertNotNull(samlResponse, "Unable to acquire SAML response from primary IS");
+
+        String decodedSAMLResponse = new String(Base64.decode(samlResponse));
+        Assert.assertTrue(decodedSAMLResponse.contains("AuthnContextClassRef"), "AuthnContextClassRef is not received" +
+                ".");
 //        Assert.assertTrue(decodedSAMLResponse.contains("AuthenticatingAuthority"), "AuthenticatingAuthority is not " +
 //                "received.");
-//
-//        boolean validResponse = sendSAMLResponseToWebApp(client, samlResponse);
-//        Assert.assertTrue(validResponse, "Invalid SAML response received by travelocity app");
 
+        boolean validResponse = sendSAMLResponseToWebApp(client, samlResponse);
+        Assert.assertTrue(validResponse, "Invalid SAML response received by travelocity app");
+    }
+
+    private boolean sendSAMLResponseToWebApp(HttpClient client, String samlResponse)
+            throws Exception {
+
+        HttpPost request = new HttpPost(PRIMARY_IS_SAML_ACS_URL);
+        request.setHeader("User-Agent", USER_AGENT);
+        List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+        urlParameters.add(new BasicNameValuePair("SAMLResponse", samlResponse));
+        request.setEntity(new UrlEncodedFormEntity(urlParameters));
+        HttpResponse response = new DefaultHttpClient().execute(request);
+
+        return validateSAMLResponse(response, usrName);
     }
 
     protected String getSecondaryISURI() {
@@ -333,20 +533,30 @@ public class OIDCIdentityFederationTestCase extends AbstractIdentityFederationTe
         request.setEntity(new UrlEncodedFormEntity(urlParameters));
 
         HttpResponse response = client.execute(request);
-        String locationHeader = getHeaderValue(response, "Location");
-        if (Utils.requestMissingClaims(response)) {
-            String pastrCookie = Utils.getPastreCookie(response);
-            Assert.assertNotNull(pastrCookie, "pastr cookie not found in response.");
-            EntityUtils.consume(response.getEntity());
-
-            response = Utils.sendPOSTConsentMessage(response, String.format(COMMON_AUTH_URL, DEFAULT_PORT +
-                            PORT_OFFSET_1), USER_AGENT , locationHeader, client, pastrCookie);
-            EntityUtils.consume(response.getEntity());
-            locationHeader = getHeaderValue(response, "Location");
-        }
+        String locationHeader1 = getHeaderValue(response, "Location");
+        log.info(">>>>>>>>>>>>>>>>>>>>>>>>> Location header from commonauth response: " + locationHeader1);
         closeHttpConnection(response);
 
-        return locationHeader;
+        HttpGet request2 = new HttpGet(locationHeader1);
+        request2.addHeader("User-Agent", USER_AGENT);
+//        request2.addHeader("Referer", PRIMARY_IS_SAML_ACS_URL);
+        HttpResponse response2 = client.execute(request2);
+        String sessionDataKeyConsent = extractValueFromResponse(response2, "name=\"sessionDataKeyConsent\"", 1);
+        EntityUtils.consume(response2.getEntity());
+//
+//        if (Utils.requestMissingClaims(response)) {
+//            String pastrCookie = Utils.getPastreCookie(response);
+//            Assert.assertNotNull(pastrCookie, "pastr cookie not found in response.");
+//            EntityUtils.consume(response.getEntity());
+//
+//            response = Utils.sendPOSTConsentMessage(response, String.format(COMMON_AUTH_URL, DEFAULT_PORT +
+//                            PORT_OFFSET_1), USER_AGENT , locationHeader1, client, pastrCookie);
+//            EntityUtils.consume(response.getEntity());
+//            locationHeader1 = getHeaderValue(response, "Location");
+//        }
+        closeHttpConnection(response2);
+
+        return sessionDataKeyConsent;
     }
 
         private Map<String, String> getOIDCResponseFromSecondaryIS(HttpClient client, String redirectURL) throws Exception {
