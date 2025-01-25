@@ -95,4 +95,18 @@ public class AdminAdvisoryManagementSuccessTest extends AdminAdvisoryManagementT
                 .body("enableBanner", equalTo(ENABLE_BANNER))
                 .body("bannerContent", equalTo(BANNER_CONTENT));
     }
+
+    // Update admin advisory config from the API.
+    @Test
+    public void updateAdminAdvisoryConfig() throws IOException {
+
+        String body = readResource("update-admin-advisory-banner.json");
+        Response response = getResponseOfPatch(ADMIN_ADVISORY_MGT_API_BASE_PATH + ADMIN_ADVISORY_BANNER_PATH, body);
+        response.then()
+                .log().ifValidationFails()
+                .assertThat()
+                .statusCode(HttpStatus.SC_OK);
+//                .body("enableBanner", equalTo(true))
+//                .body("bannerContent", equalTo("Updated Banner Content"));
+    }
 }
